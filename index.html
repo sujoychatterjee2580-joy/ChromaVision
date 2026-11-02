@@ -1,0 +1,1953 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChromaVision Pro — Interactive Color Vision & Hue Perception Benchmark</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdf4',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    .dark ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(16, 185, 129, 0.4);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(16, 185, 129, 0.7);
+    }
+    .drag-over {
+      outline: 2px dashed #10b981;
+      transform: scale(1.05);
+    }
+    /* SVG Color Blindness Filters */
+    .filter-protanopia { filter: url('#filter-protanopia'); }
+    .filter-deuteranopia { filter: url('#filter-deuteranopia'); }
+    .filter-tritanopia { filter: url('#filter-tritanopia'); }
+    .filter-achromatopsia { filter: url('#filter-achromatopsia'); }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200 antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- SVG Color Matrix Filters Definition -->
+  <svg class="hidden" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Protanopia: Red deficiency -->
+      <filter id="filter-protanopia">
+        <feColorMatrix type="matrix" values="0.567, 0.433, 0.000, 0, 0
+                                             0.558, 0.442, 0.000, 0, 0
+                                             0.000, 0.242, 0.758, 0, 0
+                                             0.000, 0.000, 0.000, 1, 0" />
+      </filter>
+      <!-- Deuteranopia: Green deficiency -->
+      <filter id="filter-deuteranopia">
+        <feColorMatrix type="matrix" values="0.625, 0.375, 0.000, 0, 0
+                                             0.700, 0.300, 0.000, 0, 0
+                                             0.000, 0.300, 0.700, 0, 0
+                                             0.000, 0.000, 0.000, 1, 0" />
+      </filter>
+      <!-- Tritanopia: Blue deficiency -->
+      <filter id="filter-tritanopia">
+        <feColorMatrix type="matrix" values="0.950, 0.050, 0.000, 0, 0
+                                             0.000, 0.433, 0.567, 0, 0
+                                             0.000, 0.475, 0.525, 0, 0
+                                             0.000, 0.000, 0.000, 1, 0" />
+      </filter>
+      <!-- Achromatopsia: Monochromacy / Grayscale -->
+      <filter id="filter-achromatopsia">
+        <feColorMatrix type="matrix" values="0.299, 0.587, 0.114, 0, 0
+                                             0.299, 0.587, 0.114, 0, 0
+                                             0.299, 0.587, 0.114, 0, 0
+                                             0.000, 0.000, 0.000, 1, 0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- Top Navigation Bar -->
+  <header class="sticky top-0 z-50 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800/80 transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <!-- Brand Logo -->
+      <div class="flex items-center space-x-3 cursor-pointer" id="nav-brand-logo">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 via-amber-500 to-emerald-400 p-0.5 shadow-lg shadow-emerald-500/20">
+          <div class="w-full h-full bg-white dark:bg-slate-900 rounded-[10px] flex items-center justify-center">
+            <svg class="w-6 h-6 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">ChromaVision</span>
+            <span class="text-xs px-1.5 py-0.5 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold rounded uppercase tracking-wider border border-emerald-500/20">PRO</span>
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 -mt-0.5">Interactive Color Vision & Hue Perception Benchmark</p>
+        </div>
+      </div>
+
+      <!-- Center Nav Tabs -->
+      <nav class="hidden md:flex items-center space-x-1 bg-slate-100 dark:bg-slate-800/60 p-1 rounded-xl border border-slate-200 dark:border-slate-700/50">
+        <button id="tab-btn-ishihara" class="nav-tab-btn active px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-white bg-emerald-600 shadow-sm">
+          🎯 Ishihara Plates
+        </button>
+        <button id="tab-btn-hue" class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all">
+          🌈 Hue Spectrum
+        </button>
+        <button id="tab-btn-speed" class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all">
+          ⚡ Odd-One-Out Sprint
+        </button>
+        <button id="tab-btn-simulator" class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all">
+          👁️ Vision Simulator
+        </button>
+        <button id="tab-btn-scorecard" class="nav-tab-btn px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all">
+          📊 Benchmark Report
+        </button>
+      </nav>
+
+      <!-- Right Utility Actions -->
+      <div class="flex items-center space-x-2">
+        <!-- Audio Mute Toggle -->
+        <button id="btn-audio-toggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Sound Effects">
+          <svg id="icon-sound-on" class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          </svg>
+          <svg id="icon-sound-off" class="w-4 h-4 text-slate-400 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+        </button>
+
+        <!-- Dark/Light Theme Toggle -->
+        <button id="btn-theme-toggle" class="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+          <svg id="icon-sun" class="w-4 h-4 text-amber-500 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <svg id="icon-moon" class="w-4 h-4 text-slate-600 block dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+          </svg>
+        </button>
+
+        <!-- Mobile Navigation Menu Toggle -->
+        <button id="btn-mobile-menu" class="md:hidden p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Dropdown Navigation -->
+    <div id="mobile-nav-menu" class="hidden md:hidden px-4 pt-2 pb-4 space-y-1 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
+      <button class="mobile-tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40" data-target="ishihara">🎯 Ishihara Plates Test</button>
+      <button class="mobile-tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300" data-target="hue">🌈 Farnsworth Hue Spectrum</button>
+      <button class="mobile-tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300" data-target="speed">⚡ Odd-One-Out Sprint</button>
+      <button class="mobile-tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300" data-target="simulator">👁️ Vision Simulator Sandbox</button>
+      <button class="mobile-tab-btn w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300" data-target="scorecard">📊 My Perception Report</button>
+    </div>
+  </header>
+
+  <!-- Top Responsive AdSense Banner Placement -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+    <div class="bg-gradient-to-r from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-800/60 dark:to-slate-900 border border-dashed border-slate-300 dark:border-slate-700/80 rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <div class="flex items-center space-x-2">
+        <span class="px-2 py-0.5 bg-slate-200 dark:bg-slate-800 text-[10px] uppercase font-bold tracking-wider rounded text-slate-600 dark:text-slate-400">Ad Placement</span>
+        <span class="font-medium text-slate-700 dark:text-slate-300">Looking for Precision Optical Eyewear & Contrast Lenses?</span>
+      </div>
+      <div class="flex items-center space-x-3">
+        <span class="text-slate-400 hidden sm:inline">Certified Color Correcting & Blue-Light Filters</span>
+        <button id="btn-ad-hero-cta" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs transition shadow-sm">
+          Explore Optical Gear →
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Hero Header & Quick Stats -->
+    <div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <div class="inline-flex items-center space-x-2 px-3 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full text-xs font-semibold mb-2 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>100% Client-Side Interactive Human Acuity Engine</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          Measure Your <span class="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">Chromatic Vision & Hue Discrimination</span>
+        </h1>
+        <p class="text-slate-600 dark:text-slate-400 text-sm sm:text-base mt-1 max-w-2xl">
+          An interactive benchmark designed to evaluate retinal cone sensitivity (L, M, S cones), subtle gradient ordering, and chromatic reaction speed.
+        </p>
+      </div>
+
+      <!-- Quick Benchmark Score Pill -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center space-x-4 min-w-[240px]">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-black text-xl shadow-md shadow-emerald-500/20" id="quick-score-badge">
+          --
+        </div>
+        <div>
+          <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Overall Color Index</div>
+          <div class="text-sm font-extrabold text-slate-800 dark:text-slate-100" id="quick-score-status">Tests Pending</div>
+          <div class="text-[10px] text-slate-500" id="quick-score-sub">Complete modes below</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 1: ISHIHARA PLATES CHALLENGE -->
+    <section id="view-ishihara" class="view-panel block space-y-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold text-xs">Module 01</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Ishihara Pseudo-Isochromatic Plate Screening</h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Evaluates Red-Green (Protan/Deutan) and Blue-Yellow (Tritan) retinal cone discernment. Identify the number hidden in the randomized dot matrix.
+            </p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300" id="ishihara-step-tracker">
+              Plate 1 of 6
+            </span>
+            <button id="btn-restart-ishihara" class="text-xs font-medium text-slate-500 hover:text-emerald-500 transition">
+              Restart Test
+            </button>
+          </div>
+        </div>
+
+        <!-- Plate Test Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center py-6">
+          <!-- Canvas Display -->
+          <div class="lg:col-span-7 flex flex-col items-center justify-center">
+            <div class="relative p-3 rounded-full bg-gradient-to-tr from-slate-200 via-slate-100 to-slate-200 dark:from-slate-800 dark:via-slate-800/50 dark:to-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-black/40">
+              <canvas id="ishihara-canvas" width="340" height="340" class="rounded-full shadow-inner bg-slate-100 dark:bg-slate-800 cursor-crosshair max-w-full h-auto"></canvas>
+              
+              <!-- Subtle Zoom / Lighting Hint -->
+              <div class="absolute bottom-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 backdrop-blur-md rounded-full text-[10px] text-white font-medium pointer-events-none flex items-center space-x-1.5">
+                <svg class="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Hold screen ~18 inches away with balanced lighting</span>
+              </div>
+            </div>
+
+            <!-- Plate Description Badge -->
+            <div class="mt-4 text-center">
+              <span id="plate-category-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Demonstration Plate (Baseline Acuity)
+              </span>
+            </div>
+          </div>
+
+          <!-- Input Panel & Controls -->
+          <div class="lg:col-span-5 space-y-5 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-1">
+                What number do you perceive inside the circle?
+              </label>
+              <div class="text-xs text-slate-600 dark:text-slate-400 mb-3">
+                Select your observed digit using the keypad or quick action buttons below:
+              </div>
+            </div>
+
+            <!-- Current input display -->
+            <div class="flex items-center space-x-2">
+              <div id="ishihara-input-display" class="flex-1 bg-white dark:bg-slate-900 border-2 border-emerald-500/50 rounded-xl px-4 py-3 text-2xl font-mono font-bold text-center text-slate-800 dark:text-white shadow-inner min-h-[56px] flex items-center justify-center">
+                <span class="text-slate-400 dark:text-slate-600 text-lg font-normal">Press a number...</span>
+              </div>
+              <button id="btn-clear-ishihara-input" class="p-3 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition" title="Clear input">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-7.172a2 2 0 00-1.414.586L3 12z" />
+                </svg>
+              </button>
+            </div>
+
+            <!-- Numeric Keypad Grid -->
+            <div class="grid grid-cols-3 gap-2">
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="1">1</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="2">2</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="3">3</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="4">4</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="5">5</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="6">6</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="7">7</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="8">8</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="9">9</button>
+              <button class="keypad-btn py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-emerald-500 font-bold text-base text-slate-800 dark:text-slate-100 shadow-sm active:scale-95 transition" data-val="0">0</button>
+              <button id="btn-val-nothing" class="py-3 px-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 hover:bg-rose-100 text-rose-600 dark:text-rose-400 font-bold text-xs shadow-sm active:scale-95 transition" data-val="none">Nothing</button>
+              <button id="btn-val-unclear" class="py-3 px-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/50 hover:bg-amber-100 text-amber-600 dark:text-amber-400 font-bold text-xs shadow-sm active:scale-95 transition" data-val="unclear">Unclear</button>
+            </div>
+
+            <!-- Action Submit Button -->
+            <button id="btn-submit-ishihara" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/25 active:scale-98 transition flex items-center justify-center space-x-2">
+              <span>Confirm & Next Plate</span>
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Feedback Modal or Section for Ishihara Result -->
+        <div id="ishihara-completed-box" class="hidden mt-6 p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30">
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-2xl font-black">
+                ✓
+              </div>
+              <div>
+                <h3 class="font-bold text-slate-900 dark:text-white text-base" id="ishihara-final-status">
+                  Ishihara Screening Complete: Normal Color Discrimination
+                </h3>
+                <p class="text-xs text-slate-600 dark:text-slate-400" id="ishihara-final-desc">
+                  Your responses demonstrate accurate differentiation across red, green, and blue spectral channels.
+                </p>
+              </div>
+            </div>
+            <button id="btn-goto-hue" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow transition">
+              Next: Farnsworth Hue Spectrum →
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 2: FARNSWORTH-MUNSELL HUE SPECTRUM PUZZLE -->
+    <section id="view-hue" class="view-panel hidden space-y-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg bg-teal-500/10 text-teal-500 font-bold text-xs">Module 02</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Farnsworth Hue Spectrum Sorting Puzzle</h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Arrange the shuffled intermediate color swatches in a smooth chromatic continuum between the fixed anchor caps. Drag tiles or click two tiles to swap.
+            </p>
+          </div>
+          
+          <!-- Palette selector -->
+          <div class="flex items-center space-x-2">
+            <label class="text-xs text-slate-500 font-medium">Spectrum:</label>
+            <select id="hue-palette-select" class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
+              <option value="rose-amber">Rose to Sunset Amber (Warm Channel)</option>
+              <option value="cyan-indigo">Cyan to Deep Indigo (Cool Channel)</option>
+              <option value="lime-emerald">Emerald to Chartreuse (Green Channel)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Puzzle Workspace -->
+        <div class="py-8 space-y-6">
+          <div class="flex items-center justify-between text-xs text-slate-500">
+            <span>🔒 Fixed Anchor (Start)</span>
+            <span class="font-semibold text-emerald-500">↔ Drag or Tap to Swap Inner Swatches</span>
+            <span>🔒 Fixed Anchor (End)</span>
+          </div>
+
+          <!-- Color Tiles Strip -->
+          <div id="hue-tiles-container" class="grid grid-cols-10 gap-2 sm:gap-3 p-4 bg-slate-50 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 select-none">
+            <!-- Tiles populated by JS -->
+          </div>
+
+          <!-- Instruction & Controls -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div class="text-xs text-slate-500 dark:text-slate-400">
+              <span class="font-bold text-slate-700 dark:text-slate-300">Tip:</span> Look for subtle shifts in lightness and color temperature. Step back from the screen if shades blend together.
+            </div>
+
+            <div class="flex items-center space-x-3 w-full sm:w-auto">
+              <button id="btn-shuffle-hue" class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                Reshuffle Inner Tiles
+              </button>
+              <button id="btn-submit-hue" class="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-bold text-xs shadow-lg shadow-teal-500/20 transition">
+                Check Chromatic Order
+              </button>
+            </div>
+          </div>
+
+          <!-- Results Feedback Card -->
+          <div id="hue-result-card" class="hidden p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div class="flex items-center space-x-4">
+                <div class="w-14 h-14 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex flex-col items-center justify-center" id="hue-score-ring">
+                  <span class="text-xl font-black text-teal-500 font-mono" id="hue-error-score">0</span>
+                  <span class="text-[9px] font-bold text-slate-400 uppercase">Error</span>
+                </div>
+                <div>
+                  <h4 class="font-bold text-slate-900 dark:text-white text-base" id="hue-acuity-rating">
+                    Flawless Hue Discrimination
+                  </h4>
+                  <p class="text-xs text-slate-600 dark:text-slate-400" id="hue-acuity-desc">
+                    Zero placement errors. Your chromatic acuity ranks in the 99th percentile for spectral gradation.
+                  </p>
+                </div>
+              </div>
+              <button id="btn-goto-speed" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs shadow transition">
+                Next: Odd-One-Out Sprint →
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 3: ODD-ONE-OUT SPEED CHALLENGE (KUKU KUBE PRO) -->
+    <section id="view-speed" class="view-panel hidden space-y-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-500 font-bold text-xs">Module 03</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Odd-One-Out Rapid Eye Sprint</h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Find and click the single tile with a slightly different shade before time expires. Tests dynamic retinal contrast sensitivity.
+            </p>
+          </div>
+          <div class="flex items-center space-x-4">
+            <!-- Timer Display -->
+            <div class="flex items-center space-x-2 px-3.5 py-1.5 bg-rose-500/10 text-rose-500 rounded-xl border border-rose-500/20">
+              <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span class="font-mono font-bold text-sm" id="speed-timer-text">15.0s</span>
+            </div>
+            <!-- Score & Level -->
+            <div class="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl font-mono text-xs font-bold text-slate-700 dark:text-slate-200">
+              Score: <span id="speed-score-text" class="text-emerald-500 font-extrabold">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Game Canvas / Grid Area -->
+        <div class="py-8 flex flex-col items-center justify-center">
+          
+          <!-- Idle / Start Screen -->
+          <div id="speed-start-screen" class="text-center py-12 max-w-md mx-auto space-y-4">
+            <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-3xl shadow-inner">
+              ⚡
+            </div>
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">Ready to Test Your Contrast Perception?</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              The grid will expand from 2x2 up to 8x8 as you advance. With each level, the difference in color delta becomes progressively finer (down to 1.5% contrast).
+            </p>
+            <button id="btn-start-speed-game" class="px-8 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-xl text-sm shadow-lg shadow-orange-500/25 active:scale-95 transition">
+              Start Eye Sprint (15s)
+            </button>
+          </div>
+
+          <!-- Active Game Grid -->
+          <div id="speed-game-active" class="hidden w-full max-w-md aspect-square bg-slate-100 dark:bg-slate-950 p-3 sm:p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+            <div id="speed-grid-container" class="w-full h-full grid gap-2 sm:gap-2.5">
+              <!-- Dynamically populated buttons -->
+            </div>
+          </div>
+
+          <!-- Game Over Modal Overlay -->
+          <div id="speed-gameover-card" class="hidden text-center py-8 max-w-md mx-auto space-y-4 bg-slate-50 dark:bg-slate-800/80 p-8 rounded-3xl border border-slate-200 dark:border-slate-700">
+            <div class="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-3xl font-black" id="speed-rank-emoji">
+              🦅
+            </div>
+            <div>
+              <div class="text-xs uppercase font-bold tracking-wider text-slate-400">Sprint Assessment</div>
+              <h3 class="text-xl font-extrabold text-slate-900 dark:text-white" id="speed-rank-title">Hawk Vision (Superior Acuity)</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1" id="speed-rank-sub">
+                You reached Level 18 with 1,800 points and 2.1% color delta resolution.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 py-2 text-left">
+              <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <span class="text-[10px] text-slate-400 font-bold uppercase">Final Level</span>
+                <div class="text-lg font-mono font-bold text-slate-800 dark:text-slate-100" id="stat-speed-level">Lvl 18</div>
+              </div>
+              <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <span class="text-[10px] text-slate-400 font-bold uppercase">Acuity Percentile</span>
+                <div class="text-lg font-mono font-bold text-emerald-500" id="stat-speed-percentile">Top 3.8%</div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-3 pt-2">
+              <button id="btn-restart-speed" class="flex-1 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 font-semibold rounded-xl text-xs text-slate-700 dark:text-slate-200 transition">
+                Play Again
+              </button>
+              <button id="btn-goto-simulator" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 font-semibold rounded-xl text-xs text-white shadow transition">
+                Next: Vision Simulator →
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 4: VISION SIMULATOR SANDBOX -->
+    <section id="view-simulator" class="view-panel hidden space-y-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-500 font-bold text-xs">Module 04</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Real-Time Spectral Vision Deficiency Simulator</h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Explore how everyday environments, safety signals, and digital designs appear through the lens of Protanopia, Deuteranopia, Tritanopia, and Monochromacy.
+            </p>
+          </div>
+
+          <!-- Deficiency Filter Pills -->
+          <div class="flex flex-wrap items-center gap-1.5 bg-slate-100 dark:bg-slate-800 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700">
+            <button class="sim-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition bg-emerald-600 text-white shadow-sm" data-filter="normal">
+              Normal Vision
+            </button>
+            <button class="sim-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition" data-filter="protanopia">
+              Protanopia (Red-Blind)
+            </button>
+            <button class="sim-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition" data-filter="deuteranopia">
+              Deuteranopia (Green-Blind)
+            </button>
+            <button class="sim-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition" data-filter="tritanopia">
+              Tritanopia (Blue-Blind)
+            </button>
+            <button class="sim-filter-btn px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-300 hover:text-emerald-500 transition" data-filter="achromatopsia">
+              Achromatopsia (Monochrome)
+            </button>
+          </div>
+        </div>
+
+        <!-- Simulator Scenes Canvas & Explanations -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 py-6 items-start">
+          
+          <!-- Visual Scene Render Canvas -->
+          <div class="lg:col-span-8 space-y-4">
+            <!-- Scene Selector Tabs -->
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Test Scene:</span>
+              <button class="scene-tab-btn active px-3 py-1 rounded-lg text-xs font-semibold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white" data-scene="traffic">🚦 Traffic Signals</button>
+              <button class="scene-tab-btn px-3 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-white" data-scene="fruit">🍎 Fresh Fruit & Produce</button>
+              <button class="scene-tab-btn px-3 py-1 rounded-lg text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-white" data-scene="dashboard">💻 Software UI & Status</button>
+            </div>
+
+            <!-- Scene Display Box with SVG Filter applied -->
+            <div id="sim-scene-display" class="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xl bg-slate-900 transition-all duration-300 min-h-[340px] flex items-center justify-center p-6">
+              
+              <!-- SCENE 1: TRAFFIC LIGHTS & ROAD SIGN -->
+              <div id="scene-traffic" class="scene-item w-full flex flex-col items-center justify-center space-y-6">
+                <div class="flex items-center space-x-8">
+                  <!-- Vertical Traffic Light Box -->
+                  <div class="w-20 bg-slate-950 p-3 rounded-2xl border-4 border-slate-700 shadow-2xl flex flex-col items-center space-y-3">
+                    <div class="w-12 h-12 rounded-full bg-rose-600 shadow-[0_0_20px_rgba(225,29,72,0.8)] border border-rose-400"></div>
+                    <div class="w-12 h-12 rounded-full bg-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.8)] border border-amber-300"></div>
+                    <div class="w-12 h-12 rounded-full bg-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.8)] border border-emerald-300"></div>
+                  </div>
+                  <!-- Directional Sign -->
+                  <div class="bg-emerald-700 text-white p-4 rounded-xl border-2 border-white shadow-lg space-y-2 text-center max-w-[200px]">
+                    <div class="text-[11px] font-extrabold uppercase tracking-widest text-emerald-200">HIGHWAY EXIT 4B</div>
+                    <div class="text-sm font-black flex items-center justify-center space-x-1">
+                      <span>METRO CENTER</span>
+                      <span>↗</span>
+                    </div>
+                    <div class="inline-block px-2 py-0.5 bg-yellow-400 text-slate-950 font-black text-[10px] rounded">CAUTION 35 MPH</div>
+                  </div>
+                </div>
+                <div class="text-xs text-slate-400 text-center font-mono">
+                  [Standard Traffic Red (#E11D48), Amber (#F59E0B), Emerald Green (#10B981)]
+                </div>
+              </div>
+
+              <!-- SCENE 2: FRUIT BASKET -->
+              <div id="scene-fruit" class="scene-item hidden w-full flex flex-col items-center justify-center space-y-4">
+                <div class="grid grid-cols-4 gap-4 max-w-md w-full">
+                  <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-slate-700 flex flex-col items-center">
+                    <div class="w-14 h-14 rounded-full bg-red-600 shadow-md shadow-red-600/40 mb-2 flex items-center justify-center text-2xl">🍎</div>
+                    <span class="text-[11px] font-bold text-white">Red Apple</span>
+                    <span class="text-[9px] text-slate-400">L-Cone Target</span>
+                  </div>
+                  <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-slate-700 flex flex-col items-center">
+                    <div class="w-14 h-14 rounded-full bg-lime-500 shadow-md shadow-lime-500/40 mb-2 flex items-center justify-center text-2xl">🍏</div>
+                    <span class="text-[11px] font-bold text-white">Green Lime</span>
+                    <span class="text-[9px] text-slate-400">M-Cone Target</span>
+                  </div>
+                  <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-slate-700 flex flex-col items-center">
+                    <div class="w-14 h-14 rounded-full bg-amber-500 shadow-md shadow-amber-500/40 mb-2 flex items-center justify-center text-2xl">🍊</div>
+                    <span class="text-[11px] font-bold text-white">Ripe Orange</span>
+                    <span class="text-[9px] text-slate-400">Medium Wavelength</span>
+                  </div>
+                  <div class="bg-slate-800/80 p-3 rounded-2xl text-center border border-slate-700 flex flex-col items-center">
+                    <div class="w-14 h-14 rounded-full bg-indigo-600 shadow-md shadow-indigo-600/40 mb-2 flex items-center justify-center text-2xl">🍇</div>
+                    <span class="text-[11px] font-bold text-white">Blueberry/Grape</span>
+                    <span class="text-[9px] text-slate-400">S-Cone Target</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SCENE 3: SOFTWARE UI STATUS BADGES -->
+              <div id="scene-dashboard" class="scene-item hidden w-full max-w-lg bg-slate-950 p-6 rounded-2xl border border-slate-800 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <span class="text-xs font-bold text-slate-300">Production Server Status</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">ALL SYSTEMS LIVE</span>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-xs text-slate-300">Database Cluster API</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 text-xs font-bold flex items-center space-x-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      <span>CRITICAL ERROR</span>
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-xs text-slate-300">Payment Gateway Stripe</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-xs font-bold flex items-center space-x-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>WARNING LATENCY</span>
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                    <span class="text-xs text-slate-300">Cloud CDN Edge</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center space-x-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span>HEALTHY (99.9%)</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Active Filter Tag Overlay -->
+              <div class="absolute top-3 left-3 px-3 py-1 bg-black/70 backdrop-blur-md rounded-lg text-[10px] font-bold text-white border border-white/10 uppercase tracking-wider" id="sim-active-filter-label">
+                Filter: Normal Trichromacy
+              </div>
+            </div>
+          </div>
+
+          <!-- Deficiency Scientific Explanation Card -->
+          <div class="lg:col-span-4 bg-slate-50 dark:bg-slate-800/40 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-500" id="sim-info-pre">Genetics & Etiology</span>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white" id="sim-info-title">Normal Color Trichromacy</h3>
+            </div>
+            
+            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed" id="sim-info-desc">
+              Normal vision relies on three functional photopigments located within retinal cone photoreceptors: L-cones (peak sensitivity ~560nm, red), M-cones (~530nm, green), and S-cones (~420nm, blue). This triad enables the human brain to distinguish over 1 million color nuances.
+            </p>
+
+            <div class="pt-3 border-t border-slate-200 dark:border-slate-700/60 space-y-2">
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-500">Global Male Prevalence:</span>
+                <span class="font-bold text-slate-800 dark:text-slate-200" id="sim-info-male">~92% Normal</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-500">Global Female Prevalence:</span>
+                <span class="font-bold text-slate-800 dark:text-slate-200" id="sim-info-female">~99.5% Normal</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-slate-500">Genetic Locus:</span>
+                <span class="font-mono text-emerald-500 font-bold" id="sim-info-locus">Xq28 Chromosome</span>
+              </div>
+            </div>
+
+            <!-- Everyday Impact Note -->
+            <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-600 dark:text-slate-300">
+              <strong class="text-slate-900 dark:text-white block mb-0.5">Design Accessibility Tip:</strong>
+              <span id="sim-info-accessibility">Never rely on color alone to convey crucial status or actions. Always pair color with text labels, icons, or high-contrast borders.</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- VIEW 5: BENCHMARK REPORT & CONE SENSITIVITY SCORECARD -->
+    <section id="view-scorecard" class="view-panel hidden space-y-6">
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-sm">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800/80 gap-4">
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold text-xs">Report Card</span>
+              <h2 class="text-xl font-bold text-slate-900 dark:text-white">Your Integrated Color Acuity Assessment</h2>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Consolidated breakdown based on your completed screening plates, spectrum puzzle alignment, and contrast speed metrics.
+            </p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button id="btn-retest-all" class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+              Reset All Tests
+            </button>
+          </div>
+        </div>
+
+        <!-- Metric Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 py-6">
+          
+          <!-- L-Cone (Red) Indicator -->
+          <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-rose-500">L-Cone Photoreceptor</span>
+              <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300" id="score-l-percent">98%</span>
+            </div>
+            <div class="text-lg font-bold text-slate-900 dark:text-white">Long Wavelength (Red)</div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+              <div id="bar-l-cone" class="bg-gradient-to-r from-rose-500 to-red-600 h-full rounded-full transition-all duration-500" style="width: 98%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              Normal response across protan sensitivity plates. No red-phase attenuation observed.
+            </p>
+          </div>
+
+          <!-- M-Cone (Green) Indicator -->
+          <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-500">M-Cone Photoreceptor</span>
+              <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300" id="score-m-percent">96%</span>
+            </div>
+            <div class="text-lg font-bold text-slate-900 dark:text-white">Medium Wavelength (Green)</div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+              <div id="bar-m-cone" class="bg-gradient-to-r from-emerald-500 to-teal-600 h-full rounded-full transition-all duration-500" style="width: 96%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              Clear differentiation on deutan verification plates. Excellent spectral green recognition.
+            </p>
+          </div>
+
+          <!-- S-Cone (Blue) Indicator -->
+          <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-cyan-500">S-Cone Photoreceptor</span>
+              <span class="text-xs font-mono font-bold text-slate-700 dark:text-slate-300" id="score-s-percent">99%</span>
+            </div>
+            <div class="text-lg font-bold text-slate-900 dark:text-white">Short Wavelength (Blue)</div>
+            <div class="w-full bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden">
+              <div id="bar-s-cone" class="bg-gradient-to-r from-cyan-500 to-blue-600 h-full rounded-full transition-all duration-500" style="width: 99%"></div>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400">
+              High fidelity across blue-yellow chromatic continuum. Accurate tritan channel function.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Summary Badge & Legal Disclaimer -->
+        <div class="p-6 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-cyan-500/10 border border-emerald-500/20 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div class="space-y-1 text-center sm:text-left">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Performance Classification</span>
+            <div class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white" id="final-classification-title">
+              Superior Trichromatic Perception (Top 3.5%)
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-400 max-w-xl">
+              Your chromatic discernment, gradient sorting precision, and visual reaction latency indicate well-balanced photoreceptor response across standard digital RGB gamuts.
+            </p>
+          </div>
+
+          <div class="text-center sm:text-right shrink-0">
+            <div class="text-3xl font-black text-emerald-500 font-mono" id="final-composite-score">142</div>
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Composite Color IQ</div>
+          </div>
+        </div>
+
+        <!-- STRICT EDUCATIONAL / LEGAL DISCLAIMER BOX -->
+        <div class="p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300/60 dark:border-amber-800/50 text-xs text-amber-800 dark:text-amber-300 space-y-2">
+          <div class="flex items-center space-x-2 font-bold text-sm">
+            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Educational & Self-Benchmarking Disclaimer</span>
+          </div>
+          <p class="leading-relaxed text-[11px] text-amber-900/80 dark:text-amber-200/90">
+            <strong>Important Notice:</strong> ChromaVision Pro is an interactive web-based visual assessment tool engineered solely for personal benchmarking, digital acuity exercise, and educational entertainment. Computer displays, ambient lighting conditions, screen brightness, and color calibration vary significantly between individual hardware devices. This tool does <strong>NOT</strong> constitute a clinical medical diagnosis, an official ophthalmic certificate, or a substitute for an in-person examination by a licensed optometrist or ophthalmologist. If you experience visual fatigue, color distinction difficulties in critical tasks, or changes in vision, please consult an eye care professional.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- HIGH-TICKET AFFILIATE & OPTICAL GEAR SECTION -->
+    <section class="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+      <div>
+        <div class="flex items-center space-x-2">
+          <span class="px-2.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Recommended Optical Gear</span>
+          <span class="text-xs text-emerald-500 font-semibold">Curated Partner Solutions</span>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mt-1">Enhance Your Visual Ergonomics & Color Fidelity</h3>
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+          Selected high-performance eyewear and color-accurate hardware for designers, developers, and users with color deficiency.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- Affiliate Card 1: Color Correcting Glasses -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition group">
+          <div class="space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white text-xl">
+              👓
+            </div>
+            <h4 class="font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition">
+              Color-Blind Optical Lenses
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Engineered with spectral notch filtering technology to increase separation between red and green photoreceptors for Protan and Deutan users.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">$249 – $380</span>
+            <button class="affiliate-cta-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition" data-product="Color-Blind Optical Lenses">
+              Check Compatibility →
+            </button>
+          </div>
+        </div>
+
+        <!-- Affiliate Card 2: Blue-Light Screen Glasses -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition group">
+          <div class="space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-500 flex items-center justify-center text-white text-xl">
+              🛡️
+            </div>
+            <h4 class="font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition">
+              Anti-Fatigue Gaming & Coding Eyewear
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Multi-layer anti-reflective coating blocking 450nm high-energy visible blue light to prevent digital asthenopia and maintain contrast.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">$45 – $95</span>
+            <button class="affiliate-cta-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition" data-product="Anti-Fatigue Screen Eyewear">
+              View Models →
+            </button>
+          </div>
+        </div>
+
+        <!-- Affiliate Card 3: Color-Accurate Monitors -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-emerald-500/50 transition group">
+          <div class="space-y-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xl">
+              🖥️
+            </div>
+            <h4 class="font-bold text-slate-900 dark:text-white group-hover:text-emerald-500 transition">
+              Factory Calibrated 99% DCI-P3 Displays
+            </h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+              Delta E < 1.5 professional IPS/OLED panels with hardware 14-bit 3D LUT calibration for color-critical photo, video, and UI grading.
+            </p>
+          </div>
+          <div class="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">$399 – $1,299</span>
+            <button class="affiliate-cta-btn px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold transition" data-product="Calibrated Creator Displays">
+              Browse Displays →
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Interactive Affiliate Modal (No external URL crashes in Canvas sandbox) -->
+  <div id="affiliate-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-slate-900 dark:text-white text-base" id="affiliate-modal-title">Optical Hardware Details</h3>
+        <button id="btn-close-affiliate-modal" class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">✕</button>
+      </div>
+      <p class="text-xs text-slate-600 dark:text-slate-400" id="affiliate-modal-desc">
+        This partner equipment provides calibrated optical filtering. When integrated on your live website, this button connects directly with affiliate tracking IDs (e.g. Amazon Associates, EnChroma Partner Portal) for 8%–15% commission per order.
+      </p>
+      <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-mono text-emerald-500">
+        Tracking Link: https://chromavision.pro/aff/optics-direct?ref=partner
+      </div>
+      <div class="flex space-x-2">
+        <button id="btn-copy-affiliate-link" class="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs transition">
+          Copy Referral Link
+        </button>
+        <button id="btn-modal-dismiss" class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast-notify" class="fixed bottom-6 right-6 z-50 bg-slate-900 text-white dark:bg-emerald-600 px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center space-x-2">
+    <span id="toast-msg">Notification</span>
+  </div>
+
+  <!-- Application Logic Scripts -->
+  <script>
+    /* ====================================================================
+       WEB AUDIO SYNTHESIS ENGINE (Safe, Zero-External File Sound Effects)
+       ==================================================================== */
+    let audioCtx = null;
+    let audioEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          audioCtx = new AudioContextClass();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.1, gainVal = 0.1) {
+      if (!audioEnabled) return;
+      try {
+        initAudio();
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn('Audio tone suppressed:', e);
+      }
+    }
+
+    function playCorrectChime() {
+      playTone(523.25, 'sine', 0.08, 0.15); // C5
+      setTimeout(() => playTone(659.25, 'sine', 0.12, 0.15), 80); // E5
+      setTimeout(() => playTone(783.99, 'sine', 0.2, 0.15), 160); // G5
+    }
+
+    function playErrorBuzzer() {
+      playTone(180, 'sawtooth', 0.2, 0.15);
+    }
+
+    function playTick() {
+      playTone(800, 'triangle', 0.03, 0.05);
+    }
+
+    /* Toast Helper */
+    function showToast(message) {
+      const toast = document.getElementById('toast-notify');
+      const msgEl = document.getElementById('toast-msg');
+      if (!toast || !msgEl) return;
+      msgEl.textContent = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    /* Sound Toggle Handler */
+    const btnAudioToggle = document.getElementById('btn-audio-toggle');
+    const iconSoundOn = document.getElementById('icon-sound-on');
+    const iconSoundOff = document.getElementById('icon-sound-off');
+
+    btnAudioToggle.addEventListener('click', () => {
+      audioEnabled = !audioEnabled;
+      if (audioEnabled) {
+        iconSoundOn.classList.remove('hidden');
+        iconSoundOff.classList.add('hidden');
+        showToast('Sound effects enabled');
+        playTone(600, 'sine', 0.1, 0.1);
+      } else {
+        iconSoundOn.classList.add('hidden');
+        iconSoundOff.classList.remove('hidden');
+        showToast('Sound effects muted');
+      }
+    });
+
+    /* Theme Toggle Handler */
+    const btnThemeToggle = document.getElementById('btn-theme-toggle');
+    btnThemeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      try {
+        localStorage.setItem('chroma_theme', isDark ? 'dark' : 'light');
+      } catch(e) {}
+      showToast(isDark ? 'Dark theme activated' : 'Light theme activated');
+    });
+
+    // Check stored theme
+    try {
+      const savedTheme = localStorage.getItem('chroma_theme');
+      if (savedTheme === 'light') {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch(e) {}
+
+    /* ====================================================================
+       TAB NAVIGATION CONTROLLER
+       ==================================================================== */
+    const tabs = {
+      ishihara: { btn: document.getElementById('tab-btn-ishihara'), view: document.getElementById('view-ishihara') },
+      hue: { btn: document.getElementById('tab-btn-hue'), view: document.getElementById('view-hue') },
+      speed: { btn: document.getElementById('tab-btn-speed'), view: document.getElementById('view-speed') },
+      simulator: { btn: document.getElementById('tab-btn-simulator'), view: document.getElementById('view-simulator') },
+      scorecard: { btn: document.getElementById('tab-btn-scorecard'), view: document.getElementById('view-scorecard') }
+    };
+
+    function switchView(tabKey) {
+      Object.keys(tabs).forEach(k => {
+        if (tabs[k].btn && tabs[k].view) {
+          if (k === tabKey) {
+            tabs[k].view.classList.remove('hidden');
+            tabs[k].btn.classList.add('active', 'text-white', 'bg-emerald-600', 'shadow-sm');
+            tabs[k].btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+          } else {
+            tabs[k].view.classList.add('hidden');
+            tabs[k].btn.classList.remove('active', 'text-white', 'bg-emerald-600', 'shadow-sm');
+            tabs[k].btn.classList.add('text-slate-600', 'dark:text-slate-300');
+          }
+        }
+      });
+      // Mobile menu auto-hide
+      document.getElementById('mobile-nav-menu').classList.add('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    document.getElementById('tab-btn-ishihara').addEventListener('click', () => switchView('ishihara'));
+    document.getElementById('tab-btn-hue').addEventListener('click', () => switchView('hue'));
+    document.getElementById('tab-btn-speed').addEventListener('click', () => switchView('speed'));
+    document.getElementById('tab-btn-simulator').addEventListener('click', () => switchView('simulator'));
+    document.getElementById('tab-btn-scorecard').addEventListener('click', () => switchView('scorecard'));
+
+    // Nav Brand Click returns to first tab
+    document.getElementById('nav-brand-logo').addEventListener('click', () => switchView('ishihara'));
+
+    // Mobile nav
+    document.getElementById('btn-mobile-menu').addEventListener('click', () => {
+      document.getElementById('mobile-nav-menu').classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('.mobile-tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget.getAttribute('data-target');
+        switchView(target);
+      });
+    });
+
+    // Secondary navigation buttons
+    document.getElementById('btn-goto-hue').addEventListener('click', () => switchView('hue'));
+    document.getElementById('btn-goto-speed').addEventListener('click', () => switchView('speed'));
+    document.getElementById('btn-goto-simulator').addEventListener('click', () => switchView('simulator'));
+    document.getElementById('btn-retest-all').addEventListener('click', () => {
+      restartIshihara();
+      initHuePuzzle();
+      resetSpeedGame();
+      switchView('ishihara');
+      showToast('All benchmarks reset. Ready to test.');
+    });
+
+    /* ====================================================================
+       MODULE 01: ISHIHARA DYNAMIC CANVAS PLATE GENERATOR
+       ==================================================================== */
+    const ishiharaCanvas = document.getElementById('ishihara-canvas');
+    const ishiharaCtx = ishiharaCanvas.getContext('2d');
+
+    // 6 authentic Ishihara Plate configurations
+    const ishiharaPlates = [
+      {
+        id: 1,
+        expected: '12',
+        name: 'Plate 1: Demonstration Plate',
+        category: 'Baseline Demonstration (Luminance Contrast)',
+        desc: 'Everyone with normal or color deficient vision should clearly identify the number 12.',
+        // Foreground dots: Orange/Rose hues, Background: Blue/Greenish dots
+        fgColors: ['#ea580c', '#f97316', '#fb923c', '#e11d48', '#f43f5e'],
+        bgColors: ['#0d9488', '#14b8a6', '#2dd4bf', '#059669', '#10b981'],
+        // Simple digit coordinates renderer
+        digit: '12'
+      },
+      {
+        id: 2,
+        expected: '8',
+        name: 'Plate 2: Red-Green Discrimination',
+        category: 'Protan & Deutan Screening',
+        desc: 'Normal vision perceives 8. Red-green deficiency may perceive 3 or cannot distinguish.',
+        fgColors: ['#dc2626', '#ef4444', '#f87171', '#b91c1c'],
+        bgColors: ['#65a30d', '#84cc16', '#a3e635', '#4d7c0f', '#15803d'],
+        digit: '8'
+      },
+      {
+        id: 3,
+        expected: '29',
+        name: 'Plate 3: Protan/Deutan Differentiation',
+        category: 'Red-Green Defect Severity',
+        desc: 'Normal trichromats perceive 29. Red-green deficient individuals perceive 70 or nothing.',
+        fgColors: ['#e11d48', '#f43f5e', '#fb7185', '#be123c'],
+        bgColors: ['#047857', '#059669', '#10b981', '#34d399', '#065f46'],
+        digit: '29'
+      },
+      {
+        id: 4,
+        expected: '5',
+        name: 'Plate 4: Subtle Red Screening',
+        category: 'L-Cone Photoreceptor Assessment',
+        desc: 'Normal vision perceives 5. Protanopia (red blindness) fails to detect or confuses with 2.',
+        fgColors: ['#e11d48', '#be123c', '#9f1239'],
+        bgColors: ['#0284c7', '#0ea5e9', '#38bdf8', '#0369a1'],
+        digit: '5'
+      },
+      {
+        id: 5,
+        expected: '74',
+        name: 'Plate 5: Green-Weak Screening',
+        category: 'M-Cone Deuteranomaly Assessment',
+        desc: 'Normal trichromats read 74. Green-weak/deuteranopic individuals often perceive 21.',
+        fgColors: ['#16a34a', '#22c55e', '#4ade80', '#15803d'],
+        bgColors: ['#d97706', '#f59e0b', '#fbbf24', '#b45309'],
+        digit: '74'
+      },
+      {
+        id: 6,
+        expected: '16',
+        name: 'Plate 6: Tritanopia Screening',
+        category: 'S-Cone (Blue-Yellow) Evaluation',
+        desc: 'Normal trichromats read 16. Rare Tritan deficiency cannot distinguish blue from violet.',
+        fgColors: ['#4f46e5', '#6366f1', '#818cf8', '#4338ca'],
+        bgColors: ['#ca8a04', '#eab308', '#facc15', '#a16207'],
+        digit: '16'
+      }
+    ];
+
+    let currentPlateIdx = 0;
+    let ishiharaUserInput = '';
+    const ishiharaUserResults = [];
+
+    // Helper: Digit mask coordinate checker for 340x340 circle canvas
+    function isPointInsideDigit(x, y, digitStr) {
+      const cx = 170;
+      const cy = 170;
+      const dx = x - cx;
+      const dy = y - cy;
+
+      if (digitStr === '12') {
+        // '1' on left (x: -55 to -30), '2' on right (x: -10 to 55)
+        // Digit '1'
+        if (dx >= -55 && dx <= -35 && dy >= -65 && dy <= 65) return true;
+        if (dx >= -75 && dx <= -55 && dy >= -65 && dy <= -40) return true; // serif
+        // Digit '2'
+        if (dx >= -10 && dx <= 55 && dy >= -65 && dy <= -40) return true; // top bar
+        if (dx >= 30 && dx <= 55 && dy >= -40 && dy <= -10) return true;  // top right
+        if (dx >= -10 && dx <= 55 && dy >= -10 && dy <= 15) return true;  // middle
+        if (dx >= -10 && dx <= 15 && dy >= 15 && dy <= 45) return true;   // bottom left
+        if (dx >= -10 && dx <= 55 && dy >= 45 && dy <= 65) return true;   // bottom bar
+        return false;
+      } else if (digitStr === '8') {
+        // Digit '8' centered
+        const rTop = Math.hypot(dx, dy - (-30));
+        const rBot = Math.hypot(dx, dy - 30);
+        if (rTop >= 22 && rTop <= 45 && dy <= 0) return true;
+        if (rBot >= 25 && rBot <= 52 && dy >= 0) return true;
+        return false;
+      } else if (digitStr === '29') {
+        // Digit '2' on left (dx: -70 to -10)
+        const is2 = (dx >= -65 && dx <= -15 && dy >= -65 && dy <= -40) ||
+                    (dx >= -35 && dx <= -15 && dy >= -40 && dy <= -10) ||
+                    (dx >= -65 && dx <= -15 && dy >= -10 && dy <= 15) ||
+                    (dx >= -65 && dx <= -40 && dy >= 15 && dy <= 45) ||
+                    (dx >= -65 && dx <= -15 && dy >= 45 && dy <= 65);
+        // Digit '9' on right (dx: 10 to 65)
+        const r9 = Math.hypot(dx - 38, dy - (-20));
+        const is9 = (r9 >= 20 && r9 <= 44 && dy <= 0) ||
+                    (dx >= 38 && dx <= 62 && dy >= -20 && dy <= 65) ||
+                    (dx >= 15 && dx <= 62 && dy >= 45 && dy <= 65);
+        return is2 || is9;
+      } else if (digitStr === '5') {
+        // Digit '5' centered
+        if (dx >= -45 && dx <= 45 && dy >= -65 && dy <= -45) return true; // top bar
+        if (dx >= -45 && dx <= -20 && dy >= -45 && dy <= -10) return true; // left post
+        if (dx >= -45 && dx <= 40 && dy >= -15 && dy <= 10) return true; // mid bar
+        if (dx >= 15 && dx <= 45 && dy >= 5 && dy <= 45) return true; // right post
+        if (dx >= -45 && dx <= 45 && dy >= 45 && dy <= 65) return true; // bottom bar
+        return false;
+      } else if (digitStr === '74') {
+        // '7' on left (-65 to -10)
+        const is7 = (dx >= -65 && dx <= -15 && dy >= -65 && dy <= -45) ||
+                    (dx >= -35 && dx <= -15 && dy >= -45 && dy <= 65);
+        // '4' on right (15 to 65)
+        const is4 = (dx >= 15 && dx <= 35 && dy >= -65 && dy <= 0) ||
+                    (dx >= 15 && dx <= 65 && dy >= -5 && dy <= 15) ||
+                    (dx >= 45 && dx <= 65 && dy >= -65 && dy <= 65);
+        return is7 || is4;
+      } else if (digitStr === '16') {
+        // '1' on left (-60 to -35)
+        const is1 = (dx >= -55 && dx <= -35 && dy >= -65 && dy <= 65);
+        // '6' on right (0 to 60)
+        const r6 = Math.hypot(dx - 35, dy - 25);
+        const is6 = (r6 >= 20 && r6 <= 45) ||
+                    (dx >= 10 && dx <= 35 && dy >= -65 && dy <= 25) ||
+                    (dx >= 10 && dx <= 55 && dy >= -65 && dy <= -45);
+        return is1 || is6;
+      }
+      return false;
+    }
+
+    // Generate packed dots inside a 340px circle
+    function drawIshiharaPlate(plate) {
+      ishiharaCtx.clearRect(0, 0, 340, 340);
+      const cx = 170;
+      const cy = 170;
+      const maxR = 158;
+
+      // Draw background circle container
+      ishiharaCtx.save();
+      ishiharaCtx.beginPath();
+      ishiharaCtx.arc(cx, cy, maxR, 0, Math.PI * 2);
+      ishiharaCtx.clip();
+
+      // Pseudo-random deterministic placement
+      const dots = [];
+      const count = 480;
+      let seed = plate.id * 12345;
+      function rnd() {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      }
+
+      // Generate points with distance rejection
+      for (let i = 0; i < count; i++) {
+        const angle = rnd() * Math.PI * 2;
+        const dist = Math.sqrt(rnd()) * (maxR - 10);
+        const x = cx + Math.cos(angle) * dist;
+        const y = cy + Math.sin(angle) * dist;
+        const radius = 3.5 + rnd() * 4.5;
+
+        // Check if inside digit
+        const isDigit = isPointInsideDigit(x, y, plate.digit);
+        const colorPalette = isDigit ? plate.fgColors : plate.bgColors;
+        const color = colorPalette[Math.floor(rnd() * colorPalette.length)];
+
+        dots.push({ x, y, r: radius, color });
+      }
+
+      // Draw all dots
+      dots.forEach(d => {
+        ishiharaCtx.beginPath();
+        ishiharaCtx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ishiharaCtx.fillStyle = d.color;
+        ishiharaCtx.fill();
+        ishiharaCtx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ishiharaCtx.lineWidth = 0.5;
+        ishiharaCtx.stroke();
+      });
+
+      ishiharaCtx.restore();
+
+      // Update text indicators
+      document.getElementById('ishihara-step-tracker').textContent = `Plate ${currentPlateIdx + 1} of ${ishiharaPlates.length}`;
+      document.getElementById('plate-category-badge').textContent = plate.category;
+    }
+
+    // Keypad Input handling
+    const inputDisplay = document.getElementById('ishihara-input-display');
+    function updateInputDisplay() {
+      if (ishiharaUserInput === '') {
+        inputDisplay.innerHTML = '<span class="text-slate-400 dark:text-slate-600 text-lg font-normal">Press a number...</span>';
+      } else {
+        inputDisplay.innerHTML = `<span class="text-emerald-500">${ishiharaUserInput}</span>`;
+      }
+    }
+
+    document.querySelectorAll('.keypad-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.getAttribute('data-val');
+        if (ishiharaUserInput.length < 3) {
+          ishiharaUserInput += val;
+          updateInputDisplay();
+          playTone(440 + parseInt(val) * 20, 'sine', 0.05, 0.08);
+        }
+      });
+    });
+
+    document.getElementById('btn-val-nothing').addEventListener('click', () => {
+      ishiharaUserInput = 'None';
+      updateInputDisplay();
+      playTone(300, 'sine', 0.08, 0.08);
+    });
+
+    document.getElementById('btn-val-unclear').addEventListener('click', () => {
+      ishiharaUserInput = 'Unclear';
+      updateInputDisplay();
+      playTone(350, 'sine', 0.08, 0.08);
+    });
+
+    document.getElementById('btn-clear-ishihara-input').addEventListener('click', () => {
+      ishiharaUserInput = '';
+      updateInputDisplay();
+      playTone(250, 'sine', 0.05, 0.08);
+    });
+
+    // Submit plate answer
+    document.getElementById('btn-submit-ishihara').addEventListener('click', () => {
+      if (!ishiharaUserInput) {
+        showToast('Please enter the digit you perceive');
+        playErrorBuzzer();
+        return;
+      }
+
+      const currentPlate = ishiharaPlates[currentPlateIdx];
+      const isMatch = ishiharaUserInput.trim() === currentPlate.expected;
+      ishiharaUserResults.push({
+        plateId: currentPlate.id,
+        expected: currentPlate.expected,
+        answered: ishiharaUserInput,
+        isCorrect: isMatch
+      });
+
+      if (isMatch) {
+        playCorrectChime();
+      } else {
+        playTone(320, 'triangle', 0.1, 0.1);
+      }
+
+      ishiharaUserInput = '';
+      updateInputDisplay();
+
+      if (currentPlateIdx < ishiharaPlates.length - 1) {
+        currentPlateIdx++;
+        drawIshiharaPlate(ishiharaPlates[currentPlateIdx]);
+      } else {
+        // Test completed
+        finishIshiharaTest();
+      }
+    });
+
+    function finishIshiharaTest() {
+      const correctCount = ishiharaUserResults.filter(r => r.isCorrect).length;
+      const completedBox = document.getElementById('ishihara-completed-box');
+      completedBox.classList.remove('hidden');
+
+      const statusEl = document.getElementById('ishihara-final-status');
+      const descEl = document.getElementById('ishihara-final-desc');
+
+      if (correctCount >= 5) {
+        statusEl.textContent = `Ishihara Screening: Normal Trichromacy (${correctCount}/6 Identified)`;
+        descEl.textContent = 'High fidelity across L-cone and M-cone channels. No significant protan or deutan deficiency detected.';
+        confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+      } else if (correctCount >= 3) {
+        statusEl.textContent = `Ishihara Screening: Mild Chromatic Variance (${correctCount}/6 Identified)`;
+        descEl.textContent = 'Slight red-green distinction variance noted under current monitor gamma settings.';
+      } else {
+        statusEl.textContent = `Ishihara Screening: Notable Color Deficiency Pattern (${correctCount}/6 Identified)`;
+        descEl.textContent = 'Answers align with standard Protan/Deutan red-green spectral attenuation.';
+      }
+
+      updateCompositeScore();
+      showToast('Ishihara plate module completed!');
+    }
+
+    function restartIshihara() {
+      currentPlateIdx = 0;
+      ishiharaUserInput = '';
+      ishiharaUserResults.length = 0;
+      document.getElementById('ishihara-completed-box').classList.add('hidden');
+      updateInputDisplay();
+      drawIshiharaPlate(ishiharaPlates[0]);
+    }
+
+    document.getElementById('btn-restart-ishihara').addEventListener('click', restartIshihara);
+
+    // Initial render
+    drawIshiharaPlate(ishiharaPlates[0]);
+
+    /* ====================================================================
+       MODULE 02: FARNSWORTH-MUNSELL HUE SPECTRUM SORTING PUZZLE
+       ==================================================================== */
+    const huePalettes = {
+      'rose-amber': [
+        '#f43f5e', '#f74d53', '#fa5c47', '#fc6c3a', '#fd7c2c',
+        '#fd8d1b', '#fc9e00', '#f6b000', '#edc100', '#eab308'
+      ],
+      'cyan-indigo': [
+        '#06b6d4', '#0ea5e9', '#2563eb', '#3b82f6', '#4f46e5',
+        '#6366f1', '#7c3aed', '#8b5cf6', '#a855f7', '#4338ca'
+      ],
+      'lime-emerald': [
+        '#10b981', '#14b8a6', '#22c55e', '#4ade80', '#84cc16',
+        '#a3e635', '#bef264', '#d9f99d', '#86efac', '#059669'
+      ]
+    };
+
+    let currentHueSpectrum = [...huePalettes['rose-amber']];
+    let currentShuffledHue = [];
+    let selectedTileIdx = null; // For tap-to-swap on mobile/desktop
+    let hueTestSubmitted = false;
+
+    function initHuePuzzle() {
+      const paletteKey = document.getElementById('hue-palette-select').value;
+      currentHueSpectrum = [...huePalettes[paletteKey]];
+      
+      // Fixed anchors: Index 0 and Index 9
+      const innerTiles = currentHueSpectrum.slice(1, 9);
+      // Shuffle inner tiles
+      for (let i = innerTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [innerTiles[i], innerTiles[j]] = [innerTiles[j], innerTiles[i]];
+      }
+
+      currentShuffledHue = [currentHueSpectrum[0], ...innerTiles, currentHueSpectrum[9]];
+      selectedTileIdx = null;
+      hueTestSubmitted = false;
+      document.getElementById('hue-result-card').classList.add('hidden');
+      renderHueTiles();
+    }
+
+    function renderHueTiles() {
+      const container = document.getElementById('hue-tiles-container');
+      container.innerHTML = '';
+
+      currentShuffledHue.forEach((color, idx) => {
+        const isAnchor = (idx === 0 || idx === 9);
+        const tile = document.createElement('div');
+        tile.className = `hue-tile relative aspect-square rounded-xl shadow-md cursor-pointer transition-all flex flex-col items-center justify-between p-1.5 select-none ${isAnchor ? 'ring-2 ring-slate-400 dark:ring-slate-600 cursor-not-allowed opacity-90' : 'hover:scale-105 active:scale-95'}`;
+        tile.style.backgroundColor = color;
+        tile.setAttribute('data-idx', idx);
+
+        if (isAnchor) {
+          tile.innerHTML = `<span class="text-[9px] font-black text-white/90 drop-shadow">🔒</span><span class="text-[8px] font-mono font-bold text-white/90 drop-shadow">${idx === 0 ? 'START' : 'END'}</span>`;
+        } else {
+          // If selected for swap
+          if (selectedTileIdx === idx) {
+            tile.classList.add('ring-4', 'ring-white', 'scale-110', 'z-10');
+            tile.innerHTML = `<span class="text-[10px] font-bold text-white drop-shadow">✓</span>`;
+          } else {
+            tile.innerHTML = `<span class="text-[9px] font-mono text-white/70 drop-shadow">${idx}</span>`;
+          }
+
+          // HTML5 Drag & Drop handlers
+          tile.setAttribute('draggable', 'true');
+          tile.addEventListener('dragstart', (e) => {
+            e.dataTransfer.setData('text/plain', idx);
+          });
+          tile.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            tile.classList.add('drag-over');
+          });
+          tile.addEventListener('dragleave', () => {
+            tile.classList.remove('drag-over');
+          });
+          tile.addEventListener('drop', (e) => {
+            e.preventDefault();
+            tile.classList.remove('drag-over');
+            const fromIdx = parseInt(e.dataTransfer.getData('text/plain'), 10);
+            if (!isNaN(fromIdx) && fromIdx !== idx && !isAnchor) {
+              swapHueTiles(fromIdx, idx);
+            }
+          });
+        }
+
+        // Tap/Click to swap
+        tile.addEventListener('click', () => {
+          if (isAnchor) {
+            showToast('End anchor tiles are locked in position');
+            playTone(200, 'sine', 0.05, 0.05);
+            return;
+          }
+
+          if (selectedTileIdx === null) {
+            selectedTileIdx = idx;
+            playTone(400, 'sine', 0.05, 0.08);
+            renderHueTiles();
+          } else if (selectedTileIdx === idx) {
+            selectedTileIdx = null;
+            renderHueTiles();
+          } else {
+            const first = selectedTileIdx;
+            selectedTileIdx = null;
+            swapHueTiles(first, idx);
+          }
+        });
+
+        container.appendChild(tile);
+      });
+    }
+
+    function swapHueTiles(i, j) {
+      if (i === 0 || i === 9 || j === 0 || j === 9) return;
+      const temp = currentShuffledHue[i];
+      currentShuffledHue[i] = currentShuffledHue[j];
+      currentShuffledHue[j] = temp;
+      playTone(550, 'sine', 0.06, 0.08);
+      renderHueTiles();
+    }
+
+    document.getElementById('hue-palette-select').addEventListener('change', initHuePuzzle);
+    document.getElementById('btn-shuffle-hue').addEventListener('click', () => {
+      initHuePuzzle();
+      showToast('Swatches reshuffled');
+    });
+
+    // Check accuracy and calculate Total Error Score (TES)
+    document.getElementById('btn-submit-hue').addEventListener('click', () => {
+      let totalError = 0;
+      currentShuffledHue.forEach((col, currentIdx) => {
+        const correctIdx = currentHueSpectrum.indexOf(col);
+        totalError += Math.abs(currentIdx - correctIdx);
+      });
+
+      hueTestSubmitted = true;
+      const resultCard = document.getElementById('hue-result-card');
+      resultCard.classList.remove('hidden');
+
+      const scoreEl = document.getElementById('hue-error-score');
+      const ratingEl = document.getElementById('hue-acuity-rating');
+      const descEl = document.getElementById('hue-acuity-desc');
+
+      scoreEl.textContent = totalError;
+
+      if (totalError === 0) {
+        ratingEl.textContent = 'Flawless Chromatic Discrimination';
+        descEl.textContent = 'Zero positional variance! Your visual color graduation precision is in the 99th percentile.';
+        playCorrectChime();
+        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+      } else if (totalError <= 4) {
+        ratingEl.textContent = 'High Hue Discrimination (Minimal Error)';
+        descEl.textContent = `Total error score of ${totalError}. Excellent subtle color temperature differentiation.`;
+        playTone(587.33, 'sine', 0.15, 0.1);
+      } else {
+        ratingEl.textContent = 'Moderate Chromatic Variance';
+        descEl.textContent = `Total error score of ${totalError}. Some adjacent intermediate shades were transposed.`;
+        playTone(350, 'triangle', 0.15, 0.1);
+      }
+
+      updateCompositeScore();
+      showToast('Hue Spectrum puzzle evaluated!');
+    });
+
+    initHuePuzzle();
+
+    /* ====================================================================
+       MODULE 03: ODD-ONE-OUT SPEED CHALLENGE (KUKU KUBE PRO)
+       ==================================================================== */
+    let speedTimer = 15.0;
+    let speedScore = 0;
+    let speedLevel = 1;
+    let speedInterval = null;
+    let speedRunning = false;
+
+    const speedStartScreen = document.getElementById('speed-start-screen');
+    const speedGameActive = document.getElementById('speed-game-active');
+    const speedGameOverCard = document.getElementById('speed-gameover-card');
+    const speedGridContainer = document.getElementById('speed-grid-container');
+    const speedTimerText = document.getElementById('speed-timer-text');
+    const speedScoreText = document.getElementById('speed-score-text');
+
+    function startSpeedGame() {
+      speedScore = 0;
+      speedLevel = 1;
+      speedTimer = 15.0;
+      speedRunning = true;
+      speedScoreText.textContent = '0';
+      speedTimerText.textContent = '15.0s';
+
+      speedStartScreen.classList.add('hidden');
+      speedGameOverCard.classList.add('hidden');
+      speedGameActive.classList.remove('hidden');
+
+      renderSpeedLevel();
+      clearInterval(speedInterval);
+      speedInterval = setInterval(updateSpeedTimer, 100);
+      playTone(440, 'sine', 0.1, 0.1);
+    }
+
+    function updateSpeedTimer() {
+      if (!speedRunning) return;
+      speedTimer -= 0.1;
+      if (speedTimer <= 0) {
+        speedTimer = 0;
+        speedTimerText.textContent = '0.0s';
+        endSpeedGame();
+      } else {
+        speedTimerText.textContent = `${speedTimer.toFixed(1)}s`;
+        if (speedTimer < 3.5 && Math.floor(speedTimer * 10) % 5 === 0) {
+          playTick();
+        }
+      }
+    }
+
+    function renderSpeedLevel() {
+      // Determine grid dimension: Level 1: 2x2, Lvl 2: 3x3, Lvl 4: 4x4, Lvl 7: 5x5, Lvl 11: 6x6, Lvl 16+: 7x7
+      let dim = 2;
+      if (speedLevel >= 18) dim = 8;
+      else if (speedLevel >= 13) dim = 7;
+      else if (speedLevel >= 9) dim = 6;
+      else if (speedLevel >= 6) dim = 5;
+      else if (speedLevel >= 3) dim = 4;
+      else if (speedLevel >= 2) dim = 3;
+
+      speedGridContainer.innerHTML = '';
+      speedGridContainer.style.gridTemplateColumns = `repeat(${dim}, minmax(0, 1fr))`;
+
+      // Generate base color
+      const baseHue = Math.floor(Math.random() * 360);
+      const baseSat = 60 + Math.floor(Math.random() * 30);
+      const baseLight = 40 + Math.floor(Math.random() * 25);
+
+      // Delta light shrinks as level rises
+      // Lvl 1: delta 16%, Lvl 5: delta 8%, Lvl 10: delta 4%, Lvl 20: delta 1.8%
+      const delta = Math.max(1.5, 18 - Math.log2(speedLevel + 1) * 3.8);
+      const oddLighter = Math.random() > 0.5;
+      const oddLight = oddLighter ? Math.min(95, baseLight + delta) : Math.max(10, baseLight - delta);
+
+      const totalTiles = dim * dim;
+      const oddTileIdx = Math.floor(Math.random() * totalTiles);
+
+      for (let i = 0; i < totalTiles; i++) {
+        const btn = document.createElement('button');
+        btn.className = 'w-full h-full rounded-xl sm:rounded-2xl transition active:scale-95 shadow-sm';
+        const isOdd = (i === oddTileIdx);
+        const tileColor = isOdd ? `hsl(${baseHue}, ${baseSat}%, ${oddLight}%)` : `hsl(${baseHue}, ${baseSat}%, ${baseLight}%)`;
+        btn.style.backgroundColor = tileColor;
+
+        btn.addEventListener('click', () => {
+          if (!speedRunning) return;
+          if (isOdd) {
+            // Correct tap!
+            speedScore += 100;
+            speedLevel++;
+            speedTimer = Math.min(15.0, speedTimer + 1.2); // Add time bonus
+            speedScoreText.textContent = speedScore;
+            playTone(600 + speedLevel * 25, 'sine', 0.08, 0.1);
+            renderSpeedLevel();
+          } else {
+            // Penalty for wrong tile tap
+            speedTimer = Math.max(0, speedTimer - 2.5);
+            playErrorBuzzer();
+            showToast('-2.5s Wrong Tile Penalty');
+          }
+        });
+
+        speedGridContainer.appendChild(btn);
+      }
+    }
+
+    function endSpeedGame() {
+      speedRunning = false;
+      clearInterval(speedInterval);
+      playTone(220, 'sawtooth', 0.3, 0.2);
+
+      speedGameActive.classList.add('hidden');
+      speedGameOverCard.classList.remove('hidden');
+
+      document.getElementById('stat-speed-level').textContent = `Lvl ${speedLevel}`;
+      
+      let title = 'Cat Vision (Normal Human Acuity)';
+      let emoji = '🐱';
+      let percentile = 'Top 45%';
+
+      if (speedLevel >= 22) {
+        title = 'Hawk Vision (Legendary Top Tier)';
+        emoji = '🦅';
+        percentile = 'Top 1.2%';
+        confetti({ particleCount: 60, spread: 80, origin: { y: 0.6 } });
+      } else if (speedLevel >= 15) {
+        title = 'Tiger Vision (High Contrast Acuity)';
+        emoji = '🐅';
+        percentile = 'Top 8.5%';
+      } else if (speedLevel >= 8) {
+        title = 'Wolf Vision (Good Standard Acuity)';
+        emoji = '🐺';
+        percentile = 'Top 25%';
+      } else {
+        title = 'Mole Vision (Needs Screen Adjustments)';
+        emoji = '🦔';
+        percentile = 'Top 65%';
+      }
+
+      document.getElementById('speed-rank-emoji').textContent = emoji;
+      document.getElementById('speed-rank-title').textContent = title;
+      document.getElementById('speed-rank-sub').textContent = `You reached Level ${speedLevel} with ${speedScore} total points.`;
+      document.getElementById('stat-speed-percentile').textContent = percentile;
+
+      updateCompositeScore();
+      showToast('Sprint completed! Check your score.');
+    }
+
+    function resetSpeedGame() {
+      speedRunning = false;
+      clearInterval(speedInterval);
+      speedStartScreen.classList.remove('hidden');
+      speedGameActive.classList.add('hidden');
+      speedGameOverCard.classList.add('hidden');
+    }
+
+    document.getElementById('btn-start-speed-game').addEventListener('click', startSpeedGame);
+    document.getElementById('btn-restart-speed').addEventListener('click', startSpeedGame);
+
+    /* ====================================================================
+       MODULE 04: VISION DEFICIENCY SIMULATOR CONTROLLER
+       ==================================================================== */
+    const simFilterButtons = document.querySelectorAll('.sim-filter-btn');
+    const simSceneDisplay = document.getElementById('sim-scene-display');
+    const simActiveFilterLabel = document.getElementById('sim-active-filter-label');
+
+    const simDescriptions = {
+      normal: {
+        title: 'Normal Color Trichromacy',
+        pre: 'Genetics & Photoreceptors',
+        desc: 'Normal vision relies on three functional photopigments located within retinal cone photoreceptors: L-cones (peak sensitivity ~560nm, red), M-cones (~530nm, green), and S-cones (~420nm, blue). Distinguishes >1M color combinations.',
+        male: '~92% Normal',
+        female: '~99.5% Normal',
+        locus: 'Trichromatic (Full Spectrum)',
+        access: 'Standard full-gamut color harmony is visible without impairment.'
+      },
+      protanopia: {
+        title: 'Protanopia (Red Photoreceptor Absence)',
+        pre: 'L-Cone Deficiency (1% of Men)',
+        desc: 'Caused by the complete absence of L-photopigments (red cones). Reds appear dark grey or brownish-olive; traffic red signals appear extinguished or faint.',
+        male: '~1.0% of Men',
+        female: '~0.02% of Women',
+        locus: 'OPN1LW (Xq28)',
+        access: 'Use bold icons and positional clues rather than pure red for safety indicators.'
+      },
+      deuteranopia: {
+        title: 'Deuteranopia (Green Photoreceptor Absence)',
+        pre: 'M-Cone Deficiency (Most Common: 5-8% of Men)',
+        desc: 'Caused by missing M-photopigments (green cones). Greens, yellows, and oranges merge into similar yellowish-khaki hues. Most common hereditary condition.',
+        male: '~5.5% of Men',
+        female: '~0.35% of Women',
+        locus: 'OPN1MW (Xq28)',
+        access: 'Provide strong lightness contrast (dark green vs light orange) and distinct shape outlines.'
+      },
+      tritanopia: {
+        title: 'Tritanopia (Blue-Yellow Photoreceptor Absence)',
+        pre: 'S-Cone Deficiency (Rare: ~0.01%)',
+        desc: 'Caused by missing S-photopigments (blue cones). Blue appears greenish, and yellow appears light violet or greyish-pink. Equal distribution across genders.',
+        male: '~0.008% of Men',
+        female: '~0.008% of Women',
+        locus: 'OPN1SW (Chromosome 7)',
+        access: 'Do not pair cyan with light green or yellow with light pink.'
+      },
+      achromatopsia: {
+        title: 'Achromatopsia (Total Monochromacy)',
+        pre: 'Complete Cone Absence (1 in 30,000)',
+        desc: 'Complete absence of functional retinal cones. Vision is entirely governed by rods, resulting in complete monochromatic grayscale perception and extreme light sensitivity.',
+        male: '~0.003%',
+        female: '~0.003%',
+        locus: 'CNGA3 / CNGB3',
+        access: 'Interface components must meet minimum 4.5:1 luminance contrast ratios under pure grayscale.'
+      }
+    };
+
+    simFilterButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+
+        simFilterButtons.forEach(b => {
+          b.classList.remove('bg-emerald-600', 'text-white', 'shadow-sm');
+          b.classList.add('text-slate-600', 'dark:text-slate-300');
+        });
+        btn.classList.add('bg-emerald-600', 'text-white', 'shadow-sm');
+        btn.classList.remove('text-slate-600', 'dark:text-slate-300');
+
+        // Remove all filter classes from scene display
+        simSceneDisplay.classList.remove('filter-protanopia', 'filter-deuteranopia', 'filter-tritanopia', 'filter-achromatopsia');
+        if (filter !== 'normal') {
+          simSceneDisplay.classList.add(`filter-${filter}`);
+        }
+
+        // Update info panel
+        const info = simDescriptions[filter] || simDescriptions.normal;
+        document.getElementById('sim-info-title').textContent = info.title;
+        document.getElementById('sim-info-pre').textContent = info.pre;
+        document.getElementById('sim-info-desc').textContent = info.desc;
+        document.getElementById('sim-info-male').textContent = info.male;
+        document.getElementById('sim-info-female').textContent = info.female;
+        document.getElementById('sim-info-locus').textContent = info.locus;
+        document.getElementById('sim-info-accessibility').textContent = info.access;
+
+        simActiveFilterLabel.textContent = `Filter: ${info.title}`;
+        playTone(350, 'sine', 0.05, 0.06);
+      });
+    });
+
+    // Scene switching inside simulator
+    document.querySelectorAll('.scene-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sceneKey = btn.getAttribute('data-scene');
+        document.querySelectorAll('.scene-tab-btn').forEach(b => {
+          b.classList.remove('active', 'bg-slate-200', 'dark:bg-slate-700', 'text-slate-800', 'dark:text-white');
+          b.classList.add('text-slate-500');
+        });
+        btn.classList.add('active', 'bg-slate-200', 'dark:bg-slate-700', 'text-slate-800', 'dark:text-white');
+        btn.classList.remove('text-slate-500');
+
+        document.querySelectorAll('.scene-item').forEach(s => s.classList.add('hidden'));
+        const activeScene = document.getElementById(`scene-${sceneKey}`);
+        if (activeScene) activeScene.classList.remove('hidden');
+      });
+    });
+
+    /* ====================================================================
+       SCORECARD & COMPOSITE BENCHMARK CALCULATION
+       ==================================================================== */
+    function updateCompositeScore() {
+      // Ishihara weight: 40 points
+      let ishiharaScore = 40;
+      if (ishiharaUserResults.length > 0) {
+        const correct = ishiharaUserResults.filter(r => r.isCorrect).length;
+        ishiharaScore = Math.round((correct / ishiharaPlates.length) * 40);
+      }
+
+      // Speed challenge weight: 35 points
+      let speedPts = 35;
+      if (speedLevel > 1) {
+        speedPts = Math.min(35, Math.round(15 + Math.min(20, speedLevel * 1.2)));
+      }
+
+      // Hue puzzle weight: 25 points
+      let huePts = 25;
+      if (hueTestSubmitted) {
+        const error = parseInt(document.getElementById('hue-error-score').textContent, 10) || 0;
+        huePts = Math.max(10, 25 - error * 2);
+      }
+
+      const totalComposite = Math.min(150, Math.round(50 + (ishiharaScore + speedPts + huePts)));
+
+      // Update badge
+      const quickBadge = document.getElementById('quick-score-badge');
+      const quickStatus = document.getElementById('quick-score-status');
+      const quickSub = document.getElementById('quick-score-sub');
+      const finalComposite = document.getElementById('final-composite-score');
+
+      quickBadge.textContent = totalComposite;
+      finalComposite.textContent = totalComposite;
+
+      if (totalComposite >= 135) {
+        quickStatus.textContent = 'Superior Acuity';
+        quickSub.textContent = 'Top 3.5% Benchmark';
+      } else if (totalComposite >= 115) {
+        quickStatus.textContent = 'High Discrimination';
+        quickSub.textContent = 'Top 18% Benchmark';
+      } else {
+        quickStatus.textContent = 'Standard Perception';
+        quickSub.textContent = 'Moderate Variation';
+      }
+
+      // Update photoreceptor bars
+      const lBar = document.getElementById('bar-l-cone');
+      const mBar = document.getElementById('bar-m-cone');
+      const sBar = document.getElementById('bar-s-cone');
+      const lText = document.getElementById('score-l-percent');
+      const mText = document.getElementById('score-m-percent');
+      const sText = document.getElementById('score-s-percent');
+
+      const ishiharaCorrect = ishiharaUserResults.filter(r => r.isCorrect).length;
+      if (ishiharaCorrect === 6) {
+        lBar.style.width = '99%'; lText.textContent = '99%';
+        mBar.style.width = '98%'; mText.textContent = '98%';
+        sBar.style.width = '99%'; sText.textContent = '99%';
+      } else if (ishiharaCorrect >= 4) {
+        lBar.style.width = '94%'; lText.textContent = '94%';
+        mBar.style.width = '92%'; mText.textContent = '92%';
+        sBar.style.width = '98%'; sText.textContent = '98%';
+      }
+    }
+
+    /* ====================================================================
+       AFFILIATE MODAL & MONETIZATION CLICKS
+       ==================================================================== */
+    const affiliateModal = document.getElementById('affiliate-modal');
+    const affModalTitle = document.getElementById('affiliate-modal-title');
+    const affModalDesc = document.getElementById('affiliate-modal-desc');
+
+    document.querySelectorAll('.affiliate-cta-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const prod = btn.getAttribute('data-product');
+        affModalTitle.textContent = prod;
+        affModalDesc.textContent = `Explore verified specifications and home-trial programs for ${prod}. On your production site, configure this card with your Amazon Associates or direct optic vendor partner affiliate tag to monetize clicks.`;
+        affiliateModal.classList.remove('hidden');
+        affiliateModal.classList.add('flex');
+        playTone(500, 'sine', 0.05, 0.08);
+      });
+    });
+
+    document.getElementById('btn-ad-hero-cta').addEventListener('click', () => {
+      affModalTitle.textContent = 'Optical Gear & Color Filtering';
+      affModalDesc.textContent = 'Explore certified color-correcting lenses, blue-light blockers, and precision design monitors.';
+      affiliateModal.classList.remove('hidden');
+      affiliateModal.classList.add('flex');
+      playTone(500, 'sine', 0.05, 0.08);
+    });
+
+    document.getElementById('btn-close-affiliate-modal').addEventListener('click', () => {
+      affiliateModal.classList.add('hidden');
+      affiliateModal.classList.remove('flex');
+    });
+
+    document.getElementById('btn-modal-dismiss').addEventListener('click', () => {
+      affiliateModal.classList.add('hidden');
+      affiliateModal.classList.remove('flex');
+    });
+
+    document.getElementById('btn-copy-affiliate-link').addEventListener('click', () => {
+      const link = 'https://chromavision.pro/aff/optics-direct?ref=partner';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => {
+          showToast('Partner referral URL copied!');
+        }).catch(() => {
+          showToast('Link ready: chromavision.pro/aff/optics');
+        });
+      } else {
+        showToast('Link ready: chromavision.pro/aff/optics');
+      }
+    });
+
+  </script>
+</body>
+</html>
+```
